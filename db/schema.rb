@@ -15,8 +15,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_11_163155) do
   enable_extension "pg_catalog.plpgsql"
   enable_extension "uuid-ossp"
 
-  create_table "products", id: :uuid, default: -> { "uuid_generate_v4()" }, force: :cascade do |t|
-    t.string "asin"
+  create_table "products", id: :string, force: :cascade do |t|
     t.string "title"
     t.string "image_url"
     t.string "product_url"

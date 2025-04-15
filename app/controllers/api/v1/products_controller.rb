@@ -3,13 +3,16 @@ module Api
     class ProductsController < ApplicationController
 
       def index
-        categories = Product.limit(200000).pluck(:category).uniq
-        category_array = []
-        categories.each do |cat|
-          img = Product.where(category: cat).limit(4).pluck(:image_url)
-          category_array << {name: cat, image: img}
-        end
-        render json: { categories: category_array }
+        limit = params[:limit].present? ? params[:limit] : 10
+        offset = params[:offset].present? ? params[:offset] : 0
+        products = Product.where(category: params[:product_type]).limit(limit).offset(offset).as_json
+        render json: {data: products, minMax: get_min_max(params[:product_type])}
+      end
+
+      def interests
+        user_id = current_user ? current_user.id : nil
+        categories = Interest.where(user_id: user_id).pluck(:category, :image_urls).to_h
+        render json: { categories: categories }
       end
 
       def search
@@ -28,6 +31,15 @@ module Api
         render json: { data: products }
       end
 
+      private
+
+      def get_min_max(category)
+        min = Product.where(category: params[:product_type]).order(price: :asc).limit(1).last.price
+        max = Product.where(category: params[:product_type]).order(price: :desc).limit(1).last.price
+        [min, max]
+      end
+
     end
   end
+
 end

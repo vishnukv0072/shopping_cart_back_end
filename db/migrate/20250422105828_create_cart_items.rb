@@ -1,8 +1,10 @@
 class CreateCartItems < ActiveRecord::Migration[8.0]
   def change
-    create_table :cart_items, id: :uuid, default: "uuid_generate_v4()" do |t|
-      t.string :product_id
+    create_table :cart_items, id: false do |t|
+      t.string :id, primary_key: true
       t.integer :quantity
+      t.float :unit_price
+      t.float :total_price
       t.uuid :user_id
       t.timestamps
     end

@@ -13,7 +13,9 @@
         products = Product.where(category: params[:product_type])
         products = products.order(order_map[sort_order]) if sort_order
         products = products.limit(limit).offset(offset).as_json
-        render json: {products: products, minMax: get_min_max}
+        cart_items = {}
+        cart_items = current_user.get_cart_items if current_user
+        render json: {products: products, minMax: get_min_max, cartItems: cart_items}
       end
 
       def interests

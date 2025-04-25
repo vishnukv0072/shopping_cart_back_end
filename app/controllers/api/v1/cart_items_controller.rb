@@ -3,9 +3,7 @@ class Api::V1::CartItemsController < ApplicationController
 
   def index
     if current_user
-      cart_items = current_user.cart_items.includes(:product).pluck(:id, :title, :category, :image_url, :product_url, :unit_price, :quantity, :total_price, :is_bestseller)
-      cart_items = cart_items.collect{|item| Hash[[:id, :title, :category, :imageUrl, :productUrl, :unitPrice, :quantity, :totalPrice, :isBestseller].zip(item)]}
-      render json: {cart_items: cart_items}
+      render json: {cart_items: current_user.get_cart_items}
     else
       render json: { message: "User must be logged in to do this action" }
     end
@@ -20,20 +18,23 @@ class Api::V1::CartItemsController < ApplicationController
         render json: { message: "Item added successfully",
                        data: {unitPrice: item.unit_price, quantity: item.quantity, totalPrice: item.total_price}}, status: 200
       when "removeItem"
-        current_user.cart_items.where(product_id: params[:cart_item][:product_id]).delete_all
+        current_user.cart_items.where(id: params[:cart_item][:product_id]).delete_all
         render json: { message: "Item removed successfully" }, status: 200
-      when "increaseQuantity"
-        item = current_user.cart_items.where(product_id: params[:cart_item][:product_id]).last
-        item.increment!(:quantity)
-        render json: { message: "Item quantity increased successfully" }, status: 200
-      when "decreaseQuantity"
-        item = current_user.cart_items.where(product_id: params[:cart_item][:product_id]).last
-        item.decrement!(:quantity)
-        render json: { message: "Item quantity decreased successfully" }, status: 200
+      when "increaseItemQuantity"
+        item = current_user.cart_items.where(id: params[:cart_item][:product_id]).last
+        # item.increment!(:quantity)
+        item.update(quantity: item.quantity + 1)
+        render json: { message: "Item quantity increased successfully", totalPrice: item.total_price }, status: 200
+      when "decreaseItemQuantity"
+        item = current_user.cart_items.where(id: params[:cart_item][:product_id]).last
+        # item.decrement!(:quantity) does not trigger call_backs
+        item.update(quantity: item.quantity - 1)
+        render json: { message: "Item quantity decreased successfully", totalPrice: item.total_price }, status: 200
       when "clearCart"
         CartItem.where(user_id: current_user.id).delete_all
         render json: { message: "Cart cleared successfully" }, status: 200
       else
+        #TODO - what if it falls here
         render json: { message: "The action type didn't match." }, status: 404
       end
     else

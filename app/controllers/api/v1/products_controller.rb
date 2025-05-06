@@ -3,19 +3,27 @@
       def index
         limit = params[:limit].present? ? params[:limit] : 10
         offset = params[:offset].present? ? params[:offset] : 0
-        sort_order = params[:sort_order]
+        sort_order = params[:sort_order].present? ? params[:sort_order] : "created_at"
         order_map = {
           "price-asc" => "price ASC",
           "price-desc" => "price DESC",
           "newest" => "created_at DESC",
           "ratings" => "rating DESC",
+          "created_at" => "created_at ASC"
         }
-        products = Product.where(category: params[:product_type])
-        products = products.order(order_map[sort_order]) if sort_order
-        products = products.limit(limit).offset(offset).as_json
+        products = Product
+        products = products.where(category: params[:product_type])
+        products = products.or(Product.where("category ilike ?", "%#{params[:product_type]}%")) if products.length < limit
+        products = products.or(Product.where(title: params[:product_type])) if products.length < limit
+        products = products.or(Product.where("title ilike ?", "%#{params[:product_type]}%")) if products.length < limit
+        min_max = get_min_max(products)
+        products = products.order(order_map[sort_order])
+        max_pages = products.length / limit
+        max_pages += 1 if products.length % limit > 0
+        products = products.offset(offset.to_i * limit).limit(limit).as_json
         cart_items = {}
         cart_items = current_user.get_cart_items if current_user
-        render json: {products: products, minMax: get_min_max, cartItems: cart_items}
+        render json: {products: products, minMax: min_max, maxPages: max_pages, cartItems: cart_items}
       end
 
       def interests
@@ -42,9 +50,9 @@
 
       private
 
-      def get_min_max
-        min = Product.where(category: params[:product_type]).order(price: :asc).limit(1).last.price
-        max = Product.where(category: params[:product_type]).order(price: :desc).limit(1).last.price
+      def get_min_max(products)
+        min = products.order(price: :asc).limit(1).last&.price
+        max = products.order(price: :desc).limit(1).last&.price
         [min, max]
       end
 

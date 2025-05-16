@@ -1,5 +1,6 @@
 class CartItem < ApplicationRecord
-  before_save :set_total_price
+  # before_save :set_total_price
+  before_save proc { |obj| obj.total_price = unit_price * quantity }
   belongs_to :user
   belongs_to :product, foreign_key: :id
 

@@ -9,6 +9,9 @@ Rails.application.routes.draw do
       #CART
       get "/cart/index" => "cart_items#index"
       post "/cart/update" => "cart_items#update"
+
+      #ADDRESS
+      get "/addresses" => "address#index"
     end
   end
 end
